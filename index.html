@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="./socket.io.client.js"></script>
+</head>
+<body>
+    <div class="wrapper" >
+     <div class="first-page" id="first-page">
+         <div class="play">
+          <button id="play-button">PLAY</button>
+         </div>
+         <div class="host">
+           <button id="host-button">HOST</button>
+         </div>
+     </div>
+
+
+     <div id="second-page" class="second-page">
+      <table>
+          <tr>
+              <td><label for="">Partner's IP Address</label></td>
+              <td><input type="text" placeholder="Type Partner's IP Address and Port" id="url"></td>
+          </tr>
+      </table>
+      <button id="test-ip">NEXT</button>
+     </div>
+        
+     <div class="third-page" id="third-page">
+         <div id="connection-status">
+
+         </div>
+         <div id="box">
+                <table border="1px solid black">
+                        <tr>
+                            <td id="1"></td>
+                            <td id="2"></td>
+                            <td id="3"></td>
+                        </tr>
+                        <tr>
+                            <td id="4"></td>
+                            <td id="5"></td>
+                            <td id="6"></td>
+                        </tr>
+                        <tr>
+                            <td id="7"></td>
+                            <td id="8"></td>
+                            <td id="9"></td>
+                        </tr>
+                    </table> 
+         </div>
+            <span id="msg" style="font-size: 25px"></span>
+            <button id="restart">Restart</button>
+     </div>
+    </div>
+</body>
+<script>
+    var ur;
+    var thr;
+    var io1;
+    var socket;
+    var url;
+    document.getElementById('test-ip').addEventListener('click',connect2host)
+    document.getElementById('play-button').addEventListener('click',play);
+    document.getElementById('host-button').addEventListener('click',host);
+    document.getElementById('1').addEventListener('click',decide);
+    document.getElementById('2').addEventListener('click',decide);
+    document.getElementById('3').addEventListener('click',decide);
+    document.getElementById('4').addEventListener('click',decide);
+    document.getElementById('5').addEventListener('click',decide);
+    document.getElementById('6').addEventListener('click',decide);
+    document.getElementById('7').addEventListener('click',decide);
+    document.getElementById('8').addEventListener('click',decide);
+    document.getElementById('9').addEventListener('click',decide);
+    document.getElementById('restart').addEventListener('click',restart)
+    document.getElementById('second-page').style.display="none";
+    document.getElementById('third-page').style.display="none";
+    document.getElementById('restart').style.display="none";
+    var box=document.getElementById("box");
+    function play(){
+        document.getElementById('first-page').style.display="none";
+        document.getElementById('second-page').style.display="";
+        ur="X";
+        thr="0"
+    }
+    function host(){
+                    var os = require('os');
+                    var interfaces = os.networkInterfaces();
+                    var addresses = [];
+                    for (var k in interfaces) {
+                        for (var k2 in interfaces[k]) {
+                            var address = interfaces[k][k2];
+                            if (address.family === 'IPv4' && !address.internal) {
+                                addresses.push(address.address);
+                            }
+                        }
+                    }
+                    console.log(addresses);
+            var server = require('http').createServer();
+            io1 = require('socket.io')(server);
+            io1.on('connection', function(client1){
+            client1.on('event', function(data){
+                insertcellByPartner(data.id);
+            });
+            client1.on('disconnect', function(){});
+            });
+           var listener= server.listen(process.env.PORT);
+           let ip=addresses[0]+":"+listener.address().port;
+           document.getElementById("connection-status").innerHTML="Your IP Address Is-"+ip;
+           document.getElementById('first-page').style.display="none";
+           document.getElementById('third-page').style.display="";
+           ur="0";
+           thr="X"
+    }
+    function connect2host(){
+        var uri=document.getElementById("url").value;
+        url="http://"+uri;
+        // socket=io('http://192.168.2.251:3000');
+        socket=io(url);
+        //if(socket.connected){
+        document.getElementById('second-page').style.display="none";
+        document.getElementById('third-page').style.display="";
+        socket.on('event',(data)=>{
+            insertcellByPartner(data.id);
+        })
+        socket.on("restart",(data)=>{
+                restartAction();
+                console.log("called")
+            })
+   // }
+    //else{
+        alert("connection is not avialable")
+    //}
+    }
+    function decide($event){
+        box.style.pointerEvents="none"
+        if(ur=="0"){
+            insertcell_host(event)
+        }
+        else{
+            insertcell_play(event)
+        }
+    }
+    function insertcell_host(event){
+        let td=document.getElementById(event.path[0].id)
+        if(td.innerHTML==""){
+        td.innerHTML=ur;
+        io1.emit('event',{id:event.path[0].id});
+        checkstatus();
+        }
+    }
+    function insertcell_play(){
+        let td=document.getElementById(event.path[0].id)
+        if(td.innerHTML=="")
+        {
+        td.innerHTML=ur;
+        socket.emit('event',{id:event.path[0].id});
+        checkstatus();
+        }
+    }
+    function insertcellByPartner(id){
+        box.style.pointerEvents="";
+        let td=document.getElementById(id)
+        if(td.innerHTML=="")
+        {
+            td.innerHTML=thr;
+            checkstatus();
+        }
+        
+    }
+    function checkstatus(){
+        var one=document.getElementById('1').innerHTML;
+        var two=document.getElementById('2').innerHTML;
+        var three=document.getElementById('3').innerHTML;
+        var four=document.getElementById('4').innerHTML;
+        var five=document.getElementById('5').innerHTML;
+        var six=document.getElementById('6').innerHTML;
+        var seven=document.getElementById('7').innerHTML;
+        var eight=document.getElementById('8').innerHTML;
+        var nine=document.getElementById('9').innerHTML;
+        if(one==two&&two==three&&one!=""){
+            showResult(two);
+            box.style.pointerEvents="none"
+            document.getElementById("1").style.backgroundColor="red";
+            document.getElementById("2").style.backgroundColor="red";
+            document.getElementById("3").style.backgroundColor="red";
+        }
+        else if(one==four&&four==seven&&seven!=""){
+            showResult(seven);
+            box.style.pointerEvents="none"
+            document.getElementById("1").style.backgroundColor="red";
+            document.getElementById("4").style.backgroundColor="red";
+            document.getElementById("7").style.backgroundColor="red";
+        }
+        else if(one==five&&five==nine&&nine!=""){
+            showResult(one);
+            box.style.pointerEvents="none"
+            document.getElementById("1").style.backgroundColor="red";
+            document.getElementById("5").style.backgroundColor="red";
+            document.getElementById("9").style.backgroundColor="red";
+        }
+        else if(two==five&&five==eight&&eight!=""){
+            showResult(two);
+            box.style.pointerEvents="none"
+            document.getElementById("2").style.backgroundColor="red";
+            document.getElementById("5").style.backgroundColor="red";
+            document.getElementById("8").style.backgroundColor="red";
+        }
+        else if(three==six&&six==nine&&nine!=""){
+            showResult(three);
+            box.style.pointerEvents="none"
+            document.getElementById("3").style.backgroundColor="red";
+            document.getElementById("6").style.backgroundColor="red";
+            document.getElementById("9").style.backgroundColor="red";
+        }
+        else if(four==five&&five==six&&six!=""){
+            showResult(four);
+            box.style.pointerEvents="none"
+            document.getElementById("4").style.backgroundColor="red";
+            document.getElementById("5").style.backgroundColor="red";
+            document.getElementById("6").style.backgroundColor="red";
+        }
+        else if(seven==eight&&eight==nine&&nine!=""){
+            showResult(seven);
+            box.style.pointerEvents="none"
+            document.getElementById("7").style.backgroundColor="red";
+            document.getElementById("8").style.backgroundColor="red";
+            document.getElementById("9").style.backgroundColor="red";
+        }
+    }
+    function showResult(code){
+         if(ur==code){
+             document.getElementById("msg").innerHTML="cngrats you win";
+         }
+         else{
+            document.getElementById("msg").innerHTML="OPPS YOU LOOSED";
+         }
+         if(ur=="0")
+         document.getElementById("restart").style.display=""
+    }
+    function restart(){
+        if(ur=="0"){
+            io1.emit("restart",{data:'restart'});
+            document.getElementById("restart").style.display="none";
+            restartAction();
+        }
+        else{
+            
+        }
+    }
+    
+    function restartAction(){
+        box.style.pointerEvents="";
+        var one=document.getElementById('1');
+        var two=document.getElementById('2');
+        var three=document.getElementById('3');
+        var four=document.getElementById('4');
+        var five=document.getElementById('5');
+        var six=document.getElementById('6');
+        var seven=document.getElementById('7');
+        var eight=document.getElementById('8');
+        var nine=document.getElementById('9');
+        document.getElementById("msg").innerHTML="";
+        one.innerHTML="";
+        two.innerHTML="";
+        three.innerHTML="";
+        four.innerHTML="";
+        five.innerHTML="";
+        six.innerHTML="";
+        seven.innerHTML=""
+        eight.innerHTML=""
+        nine.innerHTML=""
+        one.style.backgroundColor="white";
+        two.style.backgroundColor="white";
+        three.style.backgroundColor="white";
+        four.style.backgroundColor="white";
+        five.style.backgroundColor="white";
+        six.style.backgroundColor="white";
+        seven.style.backgroundColor="white";
+        eight.style.backgroundColor="white";
+        nine.style.backgroundColor="white";
+    }
+
+</script>
+</html>
